@@ -1,0 +1,12 @@
+keys/
+node_modules
+dist
+.git
+.env
+.env.*
+npm-debug.log
+.env.development
+.env.local
+uploads/
+sample.txt
+test_stream.txt

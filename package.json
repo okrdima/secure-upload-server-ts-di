@@ -1,0 +1,72 @@
+{
+  "name": "secure-upload-server-ts-di",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx src/index.ts'",
+    "dev:local": "nodemon --watch 'src/**/*.ts' --exec 'tsx --env-file=.env.development --env-file-if-exists=.env.local src/index.ts'",
+    "start": "node dist/index.js",
+    "start:dev": "node --env-file=.env.development --env-file-if-exists=.env.local dist/index.js",
+    "start:tsx": "tsx src/index.ts",
+    "build": "tsc && tsc-alias",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm format:check && pnpm test",
+    "docker:up": "docker compose --env-file .env.development up --build",
+    "docker:up:d": "docker compose --env-file .env.development up --build -d",
+    "docker:rebuild": "docker compose --env-file .env.development up --build --renew-anon-volumes",
+    "docker:down": "docker compose --env-file .env.development down",
+    "docker:reset": "docker compose --env-file .env.development down -v --remove-orphans",
+    "docker:logs": "docker compose --env-file .env.development logs -f app",
+    "docker:ps": "docker compose --env-file .env.development ps",
+    "docker:shell": "docker compose --env-file .env.development exec app sh",
+    "docker:build:prod": "docker build --target prod -t upload-server .",
+    "docker:services": "docker compose --env-file .env.development up -d s3 createbucket sftp",
+    "s3:ls": "docker compose --env-file .env.development run --rm --entrypoint aws createbucket --endpoint-url http://s3:8333 s3 ls s3://uploads --recursive",
+    "sftp:ls": "docker compose --env-file .env.development exec sftp ls -laR /home/user/upload",
+    "keys:ssh": "mkdir -p keys && ssh-keygen -t ed25519 -f ./keys/id_ed25519 -N \"\" -C app-sftp",
+    "keys:encryption": "node -p \"require('node:crypto').randomBytes(32).toString('base64')\"",
+    "smoke:health": "curl -fsS http://localhost:3000/health",
+    "smoke:upload": "curl -i -F \"file=@sample.png;type=image/png\" http://localhost:3000/attachments",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.14.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.14.0",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/lib-storage": "^3.1156.0",
+    "@types/cors": "^2.8.19",
+    "cors": "^2.8.6",
+    "express": "^5.3.0",
+    "multer": "^2.4.0",
+    "sharp": "^0.35.5",
+    "ssh2-sftp-client": "^12.1.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^26.6.5",
+    "@types/ssh2-sftp-client": "^9.0.6",
+    "nodemon": "^3.1.14",
+    "prettier": "3.9.10",
+    "tsc-alias": "^1.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

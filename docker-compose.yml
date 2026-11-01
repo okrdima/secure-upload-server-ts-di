@@ -1,0 +1,70 @@
+services:
+  app:
+    build:
+      context: .
+      target: dev
+    ports:
+      - '3000:3000'
+    env_file: .env.development
+    environment:
+      # override the localhost values from .env.development for the Docker network
+      S3_ENDPOINT: http://s3:8333
+      S3_FORCE_PATH_STYLE: 'true'
+      SFTP_HOST: sftp
+      SFTP_PORT: '22'
+      SFTP_PRIVATE_KEY_PATH: /app/keys/id_ed25519
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      createbucket:
+        condition: service_completed_successfully
+      sftp:
+        condition: service_started
+
+  s3:
+    image: chrislusf/seaweedfs:latest # pin a version tag after it works
+    command: server -s3 -s3.config=/etc/seaweedfs/s3.json -dir=/data
+    ports:
+      - '8333:8333' # S3 API, only needed for running the app outside Docker
+    volumes:
+      - ./docker/seaweedfs-s3.json:/etc/seaweedfs/s3.json:ro
+      - s3-data:/data
+
+  # one-shot job: waits for the S3 API, creates the bucket, then exits
+  createbucket:
+    image: amazon/aws-cli
+    depends_on:
+      - s3
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_KEY}
+      AWS_DEFAULT_REGION: ${S3_REGION}
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >
+        until aws --endpoint-url http://s3:8333 s3api head-bucket --bucket ${S3_BUCKET} 2>/dev/null
+        || aws --endpoint-url http://s3:8333 s3 mb s3://${S3_BUCKET};
+        do sleep 2; done
+
+  sftp-init:
+    image: alpine
+    command: chown 1001:100 /data
+    volumes:
+      - sftp-data:/data
+
+  sftp:
+    image: atmoz/sftp
+    command: ${SFTP_USERNAME}::1001
+    depends_on:
+      sftp-init:
+        condition: service_completed_successfully
+    ports:
+      - '2222:22'
+    volumes:
+      - ./keys/id_ed25519.pub:/home/${SFTP_USERNAME}/.ssh/keys/id_ed25519.pub:ro
+      - sftp-data:/home/${SFTP_USERNAME}/upload
+
+volumes:
+  s3-data:
+  sftp-data:
