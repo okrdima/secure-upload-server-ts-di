@@ -189,7 +189,6 @@ Status codes: `200` success, `400` invalid request, `401` no user, `404` not fou
 - [ ] React frontend: login and a file browser covering both storages
 - [ ] Virtual folders stored in the database
 - [ ] ClamAV scanner adapter
-- [ ] WebDAV storage adapter
 
 ## License
 
